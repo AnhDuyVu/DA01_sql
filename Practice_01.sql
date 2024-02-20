@@ -47,4 +47,16 @@ Select distinct author_id as id from Views
 where author_id = viewer_id
 order by author_id asc;
 
+---EX13
+SELECT part, assembly_step from parts_assembly
+where finish_date is null;
+
+---EX14
+select * from lyft_drivers
+where yearly_salary <= 30000 or yearly_salary >= 70000;
+
+---EX15
+select advertising_channel from uber_advertising
+where money_spent > 100000 and year = 2019;
+
 
