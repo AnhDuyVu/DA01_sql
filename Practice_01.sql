@@ -31,5 +31,20 @@ where salary > 2000 and months <10
 order by employee_id asc;
 
 ---EX9
+Select product_id from products
+where low_fats = 'Y' and recyclable = 'Y';
+
+---EX10
+Select name from Customer
+where referee_id <> 2 or referee_id is null;
+
+---EX11
+Select name, population, area from world
+where area >= 3000000 or population >= 25000000;
+
+---EX12
+Select distinct author_id as id from Views
+where author_id = viewer_id
+order by author_id asc;
 
 
