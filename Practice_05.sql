@@ -68,7 +68,8 @@ mid-test
 	
 Select distinct replacement_cost 
 from film
-order by replacement_cost asc;
+order by replacement_cost asc
+limit 1;
 
 ---Question 02
 
@@ -83,7 +84,8 @@ sum(case
     when replacement_cost between 9.99 and 19.99 then 1 else 0 end) as count_low
 from film
 group by replacement_cost_category
-order by count_low desc;
+order by count_low desc
+limit 1;
 
 --Question 03
 
@@ -94,7 +96,8 @@ on f.film_id = fc.film_id
 left join category as ca
 on fc.category_id=ca.category_id
 where name in ('Drama','Sports')
-order by ca.name desc, length desc;
+order by ca.name desc, length desc
+limit 1;
 
 --Question 04
 
@@ -106,7 +109,8 @@ on f.film_id = fc.film_id
 left join category as ca
 on fc.category_id=ca.category_id
 group by name
-order by total_titles desc;
+order by total_titles desc
+limit 1;
 
 --Question 05
 
@@ -116,7 +120,8 @@ from actor as ac
 left join film_actor as fac
 on ac.actor_id = fac.actor_id
 group by last_name,first_name
-order by total_film desc;
+order by total_film desc
+limit 1;
 
 --Question 06
 
@@ -138,7 +143,8 @@ on cus.address_id = ad.address_id
 left join city as ci
 on ad.city_id = ci.city_id
 group by ci.city
-order by total_revenue desc;
+order by total_revenue desc
+limit 1;
 
 --Question 08
 
@@ -154,4 +160,5 @@ on ad.city_id = ci.city_id
 left join country as co
 on ci.country_id = co.country_id
 group by ci.city || ',' || ' ' || co.country
-order by total_revenue asc;
+order by total_revenue asc
+limit 1;
