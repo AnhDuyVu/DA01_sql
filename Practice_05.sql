@@ -62,7 +62,7 @@ on p.page_id = pl.page_id
 where liked_date is null
 order by p.page_id asc;
 
-mid-test
+MID-TEST
 	
 ---Question 01
 	
