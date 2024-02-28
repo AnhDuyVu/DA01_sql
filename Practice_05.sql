@@ -63,11 +63,15 @@ where liked_date is null
 order by p.page_id asc;
 
 mid-test
+	
 ---Question 01
+	
 Select distinct replacement_cost 
 from film
 order by replacement_cost asc;
+
 ---Question 02
+
 Select 
 case 
     when replacement_cost between 9.99 and 19.99 then 'low'
@@ -80,7 +84,9 @@ sum(case
 from film
 group by replacement_cost_category
 order by count_low desc;
+
 --Question 03
+
 Select f.title,f.length,ca.name
 from film as f
 left join film_category as fc
@@ -89,7 +95,9 @@ left join category as ca
 on fc.category_id=ca.category_id
 where name in ('Drama','Sports')
 order by ca.name desc, length desc;
+
 --Question 04
+
 Select ca.name,
 count(f.title) as total_titles
 from film as f
@@ -99,7 +107,9 @@ left join category as ca
 on fc.category_id=ca.category_id
 group by name
 order by total_titles desc;
+
 --Question 05
+
 Select ac.last_name,ac.first_name,
 count(film_id) as total_film
 from actor as ac
@@ -107,13 +117,17 @@ left join film_actor as fac
 on ac.actor_id = fac.actor_id
 group by last_name,first_name
 order by total_film desc;
+
 --Question 06
+
 Select count(ad.address_id) as count_address_id_no_belong_to_customer
 from address as ad
 left join customer as cus
 on ad.address_id = cus.address_id
 where cus.address_id is null;
+
 --Question 07
+
 Select ci.city,
 sum(pay.amount) as total_revenue
 from payment as pay
@@ -127,8 +141,7 @@ group by ci.city
 order by total_revenue desc;
 
 --Question 08
-Select * from country;
-Select * from city;
+
 Select ci.city || ',' || ' ' || co.country  as country_city,
 sum(pay.amount) as total_revenue
 from payment as pay
