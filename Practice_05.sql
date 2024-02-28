@@ -148,7 +148,7 @@ limit 1;
 
 --Question 08
 
-Select ci.city || ',' || ' ' || co.country  as country_city,
+Select ci.city || ',' || ' ' || co.country  as city_country,
 sum(pay.amount) as total_revenue
 from payment as pay
 left join customer as cus
