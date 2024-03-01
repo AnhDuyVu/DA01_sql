@@ -120,6 +120,7 @@ order by avg(rating) desc, title asc) as movie_name_highest_avg_rating
 limit 1);
 
 --ex12
+
 select id, count(*) as num  
 from (select requester_id as id from RequestAccepted
 union all
