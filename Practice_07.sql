@@ -42,3 +42,67 @@ order by transaction_date asc;
 
 --ex05
 
+SELECT    
+  user_id,    
+  tweet_date,   
+  ROUND(AVG(tweet_count) OVER (
+    PARTITION BY user_id     
+    ORDER BY tweet_date     
+    ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)
+  ,2) AS rolling_avg_3d
+FROM tweets;
+
+--ex06
+
+with diff_transaction_minute as (SELECT *,
+extract(minutes from transaction_timestamp) as minute_transaction,
+extract(minutes from first_value(transaction_timestamp) over(partition by merchant_id, credit_card_id, amount order by transaction_timestamp)) as first_transaction_timestamp,
+extract(minutes from transaction_timestamp) - extract(minutes from first_value(transaction_timestamp) over(partition by merchant_id, credit_card_id, amount order by transaction_timestamp)) as diff
+FROM transactions),
+repeat_payment_count as (Select merchant_id, credit_card_id, amount,	
+count(transaction_id) over(PARTITION BY merchant_id, credit_card_id, amount order by transaction_timestamp) as payment_count
+from diff_transaction_minute
+where diff <=10
+order by payment_count desc)
+Select count(payment_count) as payment_count
+from repeat_payment_count
+where payment_count >1;
+
+--ex07
+with ranking_spending as (SELECT 
+  category, 
+  product, 
+  SUM(spend) AS total_spend,
+  RANK() OVER (
+    PARTITION BY category 
+    ORDER BY SUM(spend) DESC) AS ranking 
+FROM product_spend
+WHERE EXTRACT(YEAR FROM transaction_date) = 2022
+GROUP BY category, product)
+SELECT 
+  category, 
+  product, 
+  total_spend 
+FROM ranking_spending 
+WHERE ranking <= 2 
+ORDER BY category, ranking;
+
+-ex08
+
+WITH top_10 AS (
+  SELECT 
+    a.artist_name,
+    DENSE_RANK() OVER (
+      ORDER BY COUNT(s.song_id) DESC) AS artist_rank
+  FROM artists as a
+  INNER JOIN songs as s
+    ON a.artist_id = s.artist_id
+  INNER JOIN global_song_rank AS ranking
+    ON s.song_id = ranking.song_id
+  WHERE ranking.rank <= 10
+  GROUP BY a.artist_name
+)
+
+SELECT artist_name, artist_rank
+FROM top_10
+WHERE artist_rank <= 5;
