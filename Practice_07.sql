@@ -87,7 +87,7 @@ FROM ranking_spending
 WHERE ranking <= 2 
 ORDER BY category, ranking;
 
--ex08
+--ex08
 
 WITH top_10 AS (
   SELECT 
