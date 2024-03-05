@@ -74,6 +74,35 @@ AND (lat, lon) IN (
 
 -ex06
 
+with rank_salary_table as (Select e.id, e.name, e.salary,e.departmentId,d.name as depart_name,
+dense_rank() over(partition by departmentId order by departmentId asc, salary desc) as rank_salary
+from Employee as e
+join Department as d
+on e.departmentID = d.id)
+Select depart_name as Department,
+name as Employee,
+salary
+from rank_salary_table
+where rank_salary <=3;
+
+-ex07
+
+with total_weight as (Select *,
+sum(weight) over(order by turn,Weight) as total_weight
+from Queue)
+Select person_name
+from (Select *
+from total_weight
+where total_weight <=1000) as limit_weight
+order by total_weight desc
+limit 1;
+
+--ex08
+
+
+
+
+
 
 
 
