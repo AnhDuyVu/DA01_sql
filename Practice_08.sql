@@ -38,5 +38,43 @@ from two_consecutive_table;
 
 --ex04
 
+with total_amount as (Select visited_on,
+amount,
+sum(amount) as total_amount
+from Customer
+group by visited_on
+order by visited_on)
+Select visited_on,
+running_total_7d as amount,
+round(avg_amount_7d,2) as average_amount
+from (Select *,
+sum(total_amount) over(order by visited_on desc rows between CURRENT ROW AND 6 FOLLOWING) as running_total_7d,
+avg(total_amount) over(order by visited_on desc rows between CURRENT ROW AND 6 FOLLOWING) as avg_amount_7d,
+rank() over(order by visited_on) as stt
+from total_amount) as running_7d
+where stt >=7
+order by visited_on;
+
+--ex05
+
+SELECT ROUND(SUM(tiv_2016), 2) AS tiv_2016
+FROM Insurance
+WHERE tiv_2015 IN (
+    SELECT tiv_2015
+    FROM Insurance
+    GROUP BY tiv_2015
+    HAVING COUNT(*) > 1
+)
+AND (lat, lon) IN (
+    SELECT lat, lon
+    FROM Insurance
+    GROUP BY lat, lon
+    HAVING COUNT(*) = 1
+)
+
+-ex06
+
+
+
 
 
