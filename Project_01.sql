@@ -95,6 +95,7 @@ delete from sales_dataset_rfm_prj
 where quantityordered in (Select quantityordered from boxplot_outlier_table);
 
 
+--> Chọn C2 vì giá trị outlier khá xa với giá trị avg
 	
 --C1. update outlier với giá trị avg với z_score
 
@@ -115,6 +116,8 @@ set quantityordered = (select avg(quantityordered)
 
 delete from sales_dataset_rfm_prj
 where quantityordered in (Select quantityordered from z_score_outlier_table);
+
+--> Chọn C2 vì giá trị outlier khá xa với giá trị avg
 
 --6. Update bảng ghi mới
 CREATE TABLE SALES_DATASET_RFM_PRJ_CLEAN AS
