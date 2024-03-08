@@ -72,12 +72,46 @@ from avg_sttdev_table
 where abs((quantityordered-avg)/sttdev) >3)
   
 --5.3 Xử lý outlier
---delete outlier với boxplox
+--C1. update outlier với giá trị avg với boxplox
+	
+with box_plot_table as (Select 
+percentile_cont(0.25) within group(order by quantityordered) as pct_25,
+percentile_cont(0.75) within group(order by quantityordered) as pct_75,
+percentile_cont(0.75) within group(order by quantityordered)-percentile_cont(0.25) within group(order by quantityordered) as IQR,
+percentile_cont(0.25) within group(order by quantityordered) -1.5* (percentile_cont(0.75) within group(order by quantityordered)-percentile_cont(0.25) within group(order by quantityordered)) as min_boxplot,
+percentile_cont(0.75) within group(order by quantityordered) + 1.5*(percentile_cont(0.75) within group(order by quantityordered)-percentile_cont(0.25) within group(order by quantityordered)) as max_boxplot
+from sales_dataset_rfm_prj),
+boxplot_outlier_table as (Select *
+from sales_dataset_rfm_prj
+where quantityordered < (select min_boxplot from box_plot_table) or quantityordered >(select max_boxplot from box_plot_table))
+update sales_dataset_rfm_prj
+set quantityordered = (select avg(quantityordered) 
+					   from sales_dataset_rfm_prj)
+	where quantityordered in (select quantityordered from boxplot_outlier_table)
+	
+--C2. delete outlier với boxplox
   
 delete from sales_dataset_rfm_prj
 where quantityordered in (Select quantityordered from boxplot_outlier_table);
 
---delete outlier với z-score
+
+	
+--C1. update outlier với giá trị avg với z_score
+
+with avg_sttdev_table as (Select *,
+(Select avg(quantityordered) from sales_dataset_rfm_prj) as avg,
+(Select stddev(quantityordered) from sales_dataset_rfm_prj) as sttdev
+from sales_dataset_rfm_prj),
+z_score_outlier_table as (Select *,
+(quantityordered-avg)/sttdev as z_score
+from avg_sttdev_table
+where abs((quantityordered-avg)/sttdev) >3)
+update sales_dataset_rfm_prj
+set quantityordered = (select avg(quantityordered) 
+					   from sales_dataset_rfm_prj)
+	where quantityordered in (select quantityordered from z_score_outlier_table)
+
+--C2. delete outlier với z-score
 
 delete from sales_dataset_rfm_prj
 where quantityordered in (Select quantityordered from z_score_outlier_table);
