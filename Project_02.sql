@@ -77,4 +77,45 @@ Select *
 from rank_per_month_table
 where rank_per_month <=5;
 
-/*5. 
+/*5 Doanh thu tính đến thời điểm hiện tại của mỗi danh mục*/
+
+--5.1 Thống kê tổng doanh thu theo ngày của từng danh mục sản phẩm (category) trong 3 tháng qua
+
+with new_table as (Select extract(date from created_at) as dates,
+       p.category as product_category,
+       sum(o.sale_price) as revenue
+from bigquery-public-data.thelook_ecommerce.order_items as o
+left join bigquery-public-data.thelook_ecommerce.products as p
+on o.product_id = p.id 
+group by extract(date from created_at),p.category
+order by 1,2)
+Select *
+from new_table
+where dates between '2022-01-15' and '2022-04-15'
+order by product_category, dates;
+
+--5.2 Doanh thu tính đến thời điểm hiện tại của mỗi danh mục trong vòng 3 tháng qua
+
+with new_table as (Select extract(date from created_at) as dates,
+       p.category as product_category,
+       sum(o.sale_price) as revenue
+from bigquery-public-data.thelook_ecommerce.order_items as o
+left join bigquery-public-data.thelook_ecommerce.products as p
+on o.product_id = p.id 
+group by extract(date from created_at),p.category
+order by 1,2),
+day_revenue_table as (Select *
+from new_table
+where dates between '2022-01-15' and '2022-04-15'
+order by product_category, dates),
+rank_revenue_table as (Select *,
+dense_rank() over(partition by product_category order by cumulative_revenue desc) as rank_revenue
+from (Select *,
+sum(revenue) over(partition by product_category order by dates) as cumulative_revenue
+from day_revenue_table) as cumulative_revenue_table)
+Select '2022-01-15' as begin_date,
+'2022-04-15' as to_date,
+product_category,
+cumulative_revenue as revenue
+from rank_revenue_table
+where rank_revenue = 1;
