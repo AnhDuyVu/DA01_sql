@@ -57,3 +57,24 @@ group by gender,age
 order by gender,age;
 
 --insight: trẻ nhất ở nam và nữ là 12 tuổi, trong đó sô lượng nữ 12 tuổi là 542, số lượng nam 12 tuổi là 529, già nhất ở nam và nữ là 70 tuổi, trong đó số luọng nữ 70 tuổi là 529, số lượng nam 70 tuổi là 540
+
+/*4 top 5 sản phẩm mỗi tháng*/
+
+with new_table as (Select extract(year from created_at) || '-' || lpad(cast(extract(month from created_at) as string),2,'0') as month_year,
+       product_id,
+       p.name as product_name,
+       sale_price as sales,
+       p.cost as cost,
+       (sale_price - p.cost) as profit
+from bigquery-public-data.thelook_ecommerce.order_items as o
+left join bigquery-public-data.thelook_ecommerce.products as p
+on o.product_id = p.id),
+rank_per_month_table as (Select *,
+dense_rank() over(partition by month_year order by profit desc,product_name asc) as rank_per_month
+from new_table
+order by month_year)
+Select *
+from rank_per_month_table
+where rank_per_month <=5;
+
+/*5. 
