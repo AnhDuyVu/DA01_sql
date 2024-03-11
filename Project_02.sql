@@ -157,3 +157,50 @@ Total_profit,
 Total_profit/Total_cost as Profit_to_cost_ratio
 from new_table_2;
 SELECT * FROM `my-project-business-case.vw_ecommerce_analyst.vw_ecommerce_analyst`;
+
+/*2. Tạo retention cohort analysis*/
+
+with order_items_clean as (Select *
+from (Select *,
+row_number() over(partition by user_id,created_at order by created_at) as stt
+from bigquery-public-data.thelook_ecommerce.order_items) as t
+where stt=1)
+,ecommerce_index as (Select user_id,sale_price,
+extract(year from first_purchase_date) || '-' || lpad(cast(extract(month from first_purchase_date) as string),2,'0') as cohort_date,
+purchase_date,
+(extract(year from purchase_date) - extract(year from first_purchase_date))* 12 + (extract(month from purchase_date) - extract(month from first_purchase_date)) +1 as index  
+from 
+(Select user_id, sale_price,
+min(created_at) over(partition by user_id) as first_purchase_date,
+created_at as purchase_date
+ from order_items_clean) a),
+index_table as (Select cohort_date,
+index,
+count(distinct user_id) as count,
+sum(sale_price) as revenue
+from ecommerce_index
+group by cohort_date, 2),
+new_index_table as (Select cohort_date,
+index,
+row_number() over(partition by cohort_date order by cohort_date, index) as new_index,
+count,
+revenue
+from index_table
+order by cohort_date),
+index_3_month_table as (Select *
+from new_index_table
+where new_index <=4),
+customer_cohort as (Select cohort_date,
+sum(case when index = 1 then count else 0 end) as m1,
+sum(case when index = 2 then count else 0 end) as m2,
+sum(case when index = 3 then count else 0 end) as m3,
+sum(case when index = 4 then count else 0 end) as m4
+from index_3_month_table
+group by cohort_date
+order by cohort_date)
+Select cohort_date,
+(100* m1/m1) || '%' as m1,
+round(100* m2/m1) || '%' as m2,
+round(100* m3/m1) || '%' as m3,
+round(100* m4/m1) || '%' as m4
+from customer_cohort 
