@@ -198,9 +198,113 @@ sum(case when index = 4 then count else 0 end) as m4
 from index_3_month_table
 group by cohort_date
 order by cohort_date)
+       
+/*rentention cohort*/
+       
 Select cohort_date,
 (100* m1/m1) || '%' as m1,
 round(100* m2/m1) || '%' as m2,
 round(100* m3/m1) || '%' as m3,
 round(100* m4/m1) || '%' as m4
-from customer_cohort 
+from customer_cohort;
+
+/* churn cohort*/
+
+with order_items_clean as (Select *
+from (Select *,
+row_number() over(partition by user_id,created_at order by created_at) as stt
+from bigquery-public-data.thelook_ecommerce.order_items) as t
+where stt=1)
+,ecommerce_index as (Select user_id,sale_price,
+extract(year from first_purchase_date) || '-' || lpad(cast(extract(month from first_purchase_date) as string),2,'0') as cohort_date,
+purchase_date,
+(extract(year from purchase_date) - extract(year from first_purchase_date))* 12 + (extract(month from purchase_date) - extract(month from first_purchase_date)) +1 as index  
+from 
+(Select user_id, sale_price,
+min(created_at) over(partition by user_id) as first_purchase_date,
+created_at as purchase_date
+ from order_items_clean) a),
+index_table as (Select cohort_date,
+index,
+count(distinct user_id) as count,
+sum(sale_price) as revenue
+from ecommerce_index
+group by cohort_date, 2),
+new_index_table as (Select cohort_date,
+index,
+row_number() over(partition by cohort_date order by cohort_date, index) as new_index,
+count,
+revenue
+from index_table
+order by cohort_date),
+index_3_month_table as (Select *
+from new_index_table
+where new_index <=4),
+customer_cohort as (Select cohort_date,
+sum(case when index = 1 then count else 0 end) as m1,
+sum(case when index = 2 then count else 0 end) as m2,
+sum(case when index = 3 then count else 0 end) as m3,
+sum(case when index = 4 then count else 0 end) as m4
+from index_3_month_table
+group by cohort_date
+order by cohort_date)
+Select cohort_date,
+(100-(100* m1/m1)) || '%' as m1,
+(100- (round(100* m2/m1) )) || '%' as m2,
+(100- (round(100* m3/m1) )) || '%' as m3,
+(100- (round(100* m3/m1) )) || '%' as m4
+from customer_cohort;
+
+/* net revenue by cohort*/
+with order_items_clean as (Select *
+from (Select *,
+row_number() over(partition by user_id,created_at order by created_at) as stt
+from bigquery-public-data.thelook_ecommerce.order_items) as t
+where stt=1)
+,ecommerce_index as (Select user_id,sale_price,
+extract(year from first_purchase_date) || '-' || lpad(cast(extract(month from first_purchase_date) as string),2,'0') as cohort_date,
+purchase_date,
+(extract(year from purchase_date) - extract(year from first_purchase_date))* 12 + (extract(month from purchase_date) - extract(month from first_purchase_date)) +1 as index  
+from 
+(Select user_id, sale_price,
+min(created_at) over(partition by user_id) as first_purchase_date,
+created_at as purchase_date
+ from order_items_clean) a),
+index_table as (Select cohort_date,
+index,
+count(distinct user_id) as count,
+sum(sale_price) as revenue
+from ecommerce_index
+group by cohort_date, 2),
+new_index_table as (Select cohort_date,
+index,
+row_number() over(partition by cohort_date order by cohort_date, index) as new_index,
+count,
+revenue
+from index_table
+order by cohort_date),
+index_3_month_table as (Select *
+from new_index_table
+where new_index <=4),
+revenue_cohort_table as (Select cohort_date,
+sum(case when index = 1 then revenue else 0 end) as m1,
+sum(case when index = 2 then revenue else 0 end) as m2,
+sum(case when index = 3 then revenue else 0 end) as m3,
+sum(case when index = 4 then revenue else 0 end) as m4
+from index_3_month_table
+group by cohort_date
+order by cohort_date)
+Select 
+cohort_date,
+(100* m1/m1) || '%' as m1,
+(round(100* m2/m1) ) || '%' as m2,
+(round(100* m3/m1) ) || '%' as m3,
+(round(100* m4/m1) ) || '%' as m4
+from revenue_cohort_table
+
+
+/* nhận xét; 
+tình hình kinh doanh của công ty đi xuống, theo chiều dọc xu hướng khách hàng mới phát sinh mỗi tháng tăng mạnh theo thời gian, nhưng lượng khách hàng quay trở lại rất thấp, theo chiều ngang: tỉ lệ  khách hàng rời bỏ sau mỗi tháng tính từ tháng đầu tiên xét tăng từ 1 đến 2%, tháng thứ 2 sau tháng thứ 1 xét dao động tỉ lệ rời bỏ từ 93 đến 99%, gần như không có khách hàng nào quay lại, trong 1 năm nhìn theo đường dọc, tỉ lệ khách hàng rời bỏ xu hướng tăng theo thời gian, điển hình vào năm 2019 tỉ lệ rời bỏ tăng từ 93 lên 99% vào tháng 03. 
+Tỉ lệ net revenue khách hàng quay trở lại mang lại không khác biệt nhiều với retention cohort ( tỉ lệ khách hàng quay trở lại) chứng tỏ sản phẩm của công ty ko có sức hút với khách hàng quay lại
+Qua phân tích cohort, cho thấy có thể sản phẩm công ty đa dạng nhưng chưa thực sự thu hút khách hàng quay trở lại, đây có thể là một trong những nguyên nhân làm tỉ lệ quay trở lại thấp, tuy nhiên lượng khách hàng mới mỗi tháng tăng theo thời gian nên công ty cần có những phân tích sâu hơn về dịch vu chăm sóc khách hàng và sản phẩm để có những chương trình bán hàng thu hút khách hàng quay trở lại*/
+
