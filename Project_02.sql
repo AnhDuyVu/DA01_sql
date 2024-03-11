@@ -121,3 +121,39 @@ product_category,
 cumulative_revenue as revenue
 from rank_revenue_table
 where rank_revenue = 1;
+
+/* III. Tạo metric trước khi dựng dashboard */
+
+with new_table as (Select extract(year from o.created_at) || '-' || lpad(cast(extract(month from o.created_at) as string),2,'0') as month,
+       extract(year from o.created_at) as year,
+       p.category as product_category,
+       sum(oi.sale_price) as TPV,
+       count(distinct oi.order_id) as TPO,
+       sum(p.cost) as Total_cost
+ from bigquery-public-data.thelook_ecommerce.orders as o
+ left join bigquery-public-data.thelook_ecommerce.order_items as oi
+ on o.order_id = oi.order_id
+ left join bigquery-public-data.thelook_ecommerce.products as p
+ on oi.product_id = p.id
+ group by 1,2,3),
+new_table_2 as (Select *,
+(next_TPV-TPV)/TPV*100 as Revenue_growth,
+(next_TPO-TPO)/TPO*100 as Order_growth
+from (Select *,
+lead(TPV) over(partition by product_category order by month, product_category asc) as next_TPV,
+lead(TPO) over(partition by product_category order by month, product_category asc) as next_TPO,
+(TPV- Total_cost) as Total_profit
+ from new_table
+ order by product_category asc) as TPV_table)
+Select month,
+year,
+product_category,
+TPV,
+TPO,
+CONCAT(Revenue_growth, '%') as Revenue_growth,
+CONCAT(Order_growth, '%') as Order_growth,
+Total_cost,
+Total_profit,
+Total_profit/Total_cost as Profit_to_cost_ratio
+from new_table_2;
+SELECT * FROM `my-project-business-case.vw_ecommerce_analyst.vw_ecommerce_analyst`;
