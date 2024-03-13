@@ -153,4 +153,40 @@ Select *,
 sum(count) over(partition by segment) as total_count_each_segment
 from segment_table
 
-/* Nhận xét: Champion, Hibernating, Potential Loyalist và Lost Customer
+/* Tính tỉ trọng phần trăm của mỗi segment so với total*/
+	
+with customer_RFM_2 as (Select customername,
+current_date - max(orderdate) as R,
+count(distinct ordernumber) as F,
+sum(sales) as M
+from sales_dataset_rfm_prj_clean
+group by customername),
+rfm_score_2 as (Select customername,
+ntile(5) over (order by R desc) as R_score,
+ntile(5) over (order by F) as F_score,
+ntile(5) over (order by M) as M_score
+from customer_RFM_2),
+rfm_final_2 as (Select customername,
+cast(r_score  as varchar) || cast(F_score as varchar) || cast(M_score as varchar) as rfm_score
+from rfm_score_2),
+segment_table_2 as (Select segment, count (*) as count_segment from (Select r.customername,
+seg_sc.segment
+from rfm_final_2 as r
+join segment_score as seg_sc
+on r.rfm_score = seg_sc.scores) as a
+group by segment
+order by segment, count(*) desc)
+SELECT 
+    segment,
+    count_segment,
+    round((count_segment / SUM(count_segment) OVER ())*100,2) AS segment_percentage
+FROM 
+    segment_table_2
+GROUP BY 
+    segment, count_segment
+order by segment_percentage desc;
+
+/* Nhận xét: Champion, Hibernating, Potential Loyalist và Lost Customers là 4 phân khúc khách hàng chiếm tỉ trọng cao nhất, lần lượt là 18.48%, 16.30%, 15.22%, 11.96% nên công ty cần chú trọng nhiều hơn vào 4 phân khúc khách hàng này
+Đối với Champion:  công ty đề xuất chương trình khách hàng thân thiết với những giá trị khác biệt và cá nhân hóa cao để giữ chân các khách hàng này
+Đối với khách hàng Potential Loyalist : công ty đề xuất chương trình ưu đãi gắn liền với các ngưỡng chi tiêu hoặc chương trình giới thiệu bạn bè để giúp khuyếnh khích khách hàng mua giá trị đơn hàng cao hơn trong mỗi lần mua hàng
+Đối với khách hàng Hibernating và Lost Customers : công ty có thể thực hiện các chiến dịch retargeting, các chương trình xúc tiến ngắn hạn với 1 số hình thức như voucher, discount giảm giá, và ưu đãi độc quyền để khuyến khích khách hàng quay trở lại mua hàng lần nữa và tần suất mua nhiều hơn
